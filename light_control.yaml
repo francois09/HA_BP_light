@@ -1,11 +1,12 @@
 blueprint:
   name: Light control
-  description: Control light based on daylight, cloud covering, occupancy and switch
+  description: Control light based on daylight time, cloud covering (planned), occupancy and manual switch
   domain: automation
-  source_url: https://github.com/francois09/HA_blueprints/light_control.yaml
+  source_url: https://github.com/francois09/HA_BP_light/light_control.yaml
   input:
     motion_sensor:
-      name: Motion sensor of the room
+      name: Motion sensor(s) of the room
+      description: The motion sensor(s) of the room.
       selector:
         entity:
           domain: binary_sensor
@@ -13,6 +14,7 @@ blueprint:
           multiple: true
     light_device:
       name: Light management device
+      description: The light of the room. Can be a switch or a dimmer.
       selector:
         entity:
           domain: light
@@ -63,7 +65,7 @@ blueprint:
           step: 10
     debounce_boolean:
       name: Waiter for the bounce message
-      description: Boolean to indicate previous action was automated, wait for light message
+      description: Boolean to indicate previous action was automated, wait for light message to be discarded
       selector:
         entity:
           domain: input_boolean
@@ -76,7 +78,6 @@ variables:
   is_bedroom: !input is_bedroom
   day_brightness: !input day_brightness
   night_brightness: !input night_brightness
-  # debounce_boolean: !input debounce_boolean
 
 
 trigger:
@@ -169,13 +170,13 @@ action:
         - trigger_by_nomotion
     sequence:
     - delay: !input off_delay
-    - service: light.turn_off
-      target:
-        entity_id: !input light_device
     - service: input_boolean.turn_on
       data: {}
       target:
         entity_id: !input debounce_boolean
+    - service: light.turn_off
+      target:
+        entity_id: !input light_device
 
   #
   # Motion during the day, and for no_window rooms
@@ -198,15 +199,15 @@ action:
     - condition: template
       value_template: "{{ not is_window }}"
     sequence:
+    - service: input_boolean.turn_on
+      data: {}
+      target:
+        entity_id: !input debounce_boolean
     - service: light.turn_on
       target:
         entity_id: !input light_device
       data:
         brightness_pct: "{{ day_brightness}}"
-    - service: input_boolean.turn_on
-      data: {}
-      target:
-        entity_id: !input debounce_boolean
 
   #
   # Motion during the night, and not a bedroom
@@ -232,15 +233,15 @@ action:
     - condition: template
       value_template: "{{ not is_bedroom }}"
     sequence:
+    - service: input_boolean.turn_on
+      data: {}
+      target:
+        entity_id: !input debounce_boolean
     - service: light.turn_on
       target:
         entity_id: !input light_device
       data:
         brightness_pct: "{{ day_brightness}}"
-    - service: input_boolean.turn_on
-      data: {}
-      target:
-        entity_id: !input debounce_boolean
 
   #
   # Motion during the night, and not a bedroom
@@ -266,12 +267,12 @@ action:
     - condition: template
       value_template: "{{ not is_bedroom }}"
     sequence:
+    - service: input_boolean.turn_on
+      data: {}
+      target:
+        entity_id: !input debounce_boolean
     - service: light.turn_on
       target:
         entity_id: !input light_device
       data:
         brightness_pct: "{{ night_brightness}}"
-    - service: input_boolean.turn_on
-      data: {}
-      target:
-        entity_id: !input debounce_boolean
