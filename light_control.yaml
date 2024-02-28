@@ -1,5 +1,5 @@
 blueprint:
-  name: Light control
+  name: Smart light management
   description: Control light based on daylight time, cloud covering (planned), occupancy and manual switch
   domain: automation
   source_url: https://github.com/francois09/HA_BP_light/light_control.yaml
