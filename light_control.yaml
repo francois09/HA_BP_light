@@ -115,24 +115,28 @@ action:
   # #
   # # Light on (before sunset, after sunrise == Day)
   # # -> Turn on the light
-  # - conditions:
-  #   - condition: state
-  #     entity_id: !input light_device
-  #     state: 'on'
-  #   - condition: trigger
-  #     id:
-  #       - trigger_by_light
-  #   - condition: sun
-  #     before: sunset
-  #     after: sunrise
-  #     # after_offset: '-1:00:00'
-  #     # before_offset: '-1:00:00'
-  #   sequence:
-  #   - service: light.turn_on
-  #     target:
-  #       entity_id: !input light_device
-  #     data:
-  #       brightness_pct: "{{ day_brightness}}"
+  - conditions:
+    - condition: state
+      entity_id: !input light_device
+      state: 'on'
+    - condition: trigger
+      id:
+        - trigger_by_light
+    - condition: sun
+      before: sunset
+      after: sunrise
+      # after_offset: '-1:00:00'
+      # before_offset: '-1:00:00'
+    sequence:
+    - service: input_boolean.turn_on
+      data: {}
+      target:
+        entity_id: !input debounce_boolean
+    - service: light.turn_on
+      target:
+        entity_id: !input light_device
+      data:
+        brightness_pct: "{{ day_brightness}}"
 
   ############## MANUAL BUTTON NOT TAKEN INTO ACCOUNT NOW
   # #
