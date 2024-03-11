@@ -63,6 +63,12 @@ blueprint:
           unit_of_measurement: "seconds"
           mode: slider
           step: 10
+    manual_timer:
+      name: Timer before restoring to automatic mode
+      description: After manual action, timer used to say how long light should respect manual decision
+      selector:
+        entity:
+          domain: timer
     debounce_boolean:
       name: Waiter for the bounce message
       description: Boolean to indicate previous action was automated, wait for light message to be discarded
@@ -92,11 +98,15 @@ trigger:
 - platform: state
   entity_id: !input light_device
   id: trigger_by_light
+- platform: state
+  entity_id: !input manual_timer
+  to: idle
+  id: trigger_by_timer
 
 action:
 - choose:
 
-  ########## Gobble message boucing following automation action
+  ########## Gobble message bouncing following automation action
   #
   - conditions:
     - condition: state
@@ -112,8 +122,33 @@ action:
         entity_id: !input debounce_boolean
 
   # #
+  # # Light off on timer
+  # # -> Turn off the light because end of manual timer
+  - conditions:
+    - condition: trigger
+      id:
+        - trigger_by_timer
+    - condition: state
+      entity_id: !input manual_timer
+      state: idle
+    sequence:
+    - if:
+      - condition: state
+        entity_id: !input light_device
+        state: 'on'
+      then:
+      - service: input_boolean.turn_on
+        data: {}
+        target:
+          entity_id: !input debounce_boolean
+      - service: light.turn_off
+        target:
+          entity_id: !input light_device
+
+
+  # #
   # # Light on (before sunset, after sunrise == Day)
-  # # -> Turn on the light
+  # # -> Turn on the light and start manual timer
   - conditions:
     - condition: state
       entity_id: !input light_device
@@ -131,6 +166,10 @@ action:
       data: {}
       target:
         entity_id: !input debounce_boolean
+    - service: timer.start
+      data: {}
+      target:
+        entity_id: !input manual_timer
     - service: light.turn_on
       target:
         entity_id: !input light_device
@@ -139,7 +178,7 @@ action:
 
   # #
   # # Light on (after sunset, before sunrise == Night)
-  # # -> Turn on the light at N%
+  # # -> Turn on the light at N% and start manual timer
   - conditions:
     - condition: state
       entity_id: !input light_device
@@ -157,6 +196,10 @@ action:
       data: {}
       target:
         entity_id: !input debounce_boolean
+    - service: timer.start
+      data: {}
+      target:
+        entity_id: !input manual_timer
     - service: light.turn_on
       target:
         entity_id: !input light_device
@@ -174,6 +217,9 @@ action:
     - condition: trigger
       id:
         - trigger_by_nomotion
+    - condition: state
+      entity_id: !input trigging_timer
+      state: idle
     sequence:
     - delay: !input off_delay
     - if:
