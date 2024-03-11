@@ -218,7 +218,7 @@ action:
       id:
         - trigger_by_nomotion
     - condition: state
-      entity_id: !input trigging_timer
+      entity_id: !input manual_timer
       state: idle
     sequence:
     - delay: !input off_delay
