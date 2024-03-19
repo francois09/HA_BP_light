@@ -76,7 +76,7 @@ blueprint:
         entity:
           domain: input_boolean
 
-mode: restart
+mode: queued
 max_exceeded: silent
 
 variables:
