@@ -217,7 +217,7 @@ action:
       id:
         - trigger_by_light
     sequence:
-    - service: timer.stop
+    - service: timer.cancel
       data: {}
       target:
         entity_id: !input manual_timer
