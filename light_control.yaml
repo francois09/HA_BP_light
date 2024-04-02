@@ -206,6 +206,22 @@ action:
       data:
         brightness_pct: "{{ night_brightness}}"
 
+  # #
+  # # Light off
+  # # -> Turn off the manual timer, light has been manually shutoff
+  - conditions:
+    - condition: state
+      entity_id: !input light_device
+      state: 'off'
+    - condition: trigger
+      id:
+        - trigger_by_light
+    sequence:
+    - service: timer.stop
+      data: {}
+      target:
+        entity_id: !input manual_timer
+
   #
   # No motion
   # -> Turn off the light
