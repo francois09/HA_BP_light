@@ -161,25 +161,26 @@ action:
       after: sunrise
       # after_offset: '-1:00:00'
       # before_offset: '-1:00:00'
-    - condition:
-        condition: numeric_state
+    sequence:
+    - if:
+      - condition: numeric_state
         entity_id: !input light_device
         attribute: brightness_pct
         below: !input day_brightness
-    sequence:
-    - service: input_boolean.turn_on
-      data: {}
-      target:
-        entity_id: !input debounce_boolean
-    - service: timer.start
-      data: {}
-      target:
-        entity_id: !input manual_timer
-    - service: light.turn_on
-      target:
-        entity_id: !input light_device
-      data:
-        brightness_pct: "{{ day_brightness }}"
+      then:
+      - service: input_boolean.turn_on
+        data: {}
+        target:
+          entity_id: !input debounce_boolean
+      - service: timer.start
+        data: {}
+        target:
+          entity_id: !input manual_timer
+      - service: light.turn_on
+        target:
+          entity_id: !input light_device
+          data:
+            brightness_pct: "{{ day_brightness }}"
 
   # #
   # # Light on (after sunset, before sunrise == Night)
@@ -196,25 +197,31 @@ action:
       after: sunset
       # after_offset: '-1:00:00'
       # before_offset: '-1:00:00'
-    - condition:
+    - condition: numeric_state
+      entity_id: !input light_device
+      attribute: brightness_pct
+      above: !input night_brightness
+    sequence:
+    - if:
+      - condition:
         condition: numeric_state
         entity_id: !input light_device
         attribute: brightness_pct
         above: !input night_brightness
-    sequence:
-    - service: input_boolean.turn_on
-      data: {}
-      target:
-        entity_id: !input debounce_boolean
-    - service: timer.start
-      data: {}
-      target:
-        entity_id: !input manual_timer
-    - service: light.turn_on
-      target:
-        entity_id: !input light_device
-      data:
-        brightness_pct: "{{ night_brightness}}"
+      then:  
+      - service: input_boolean.turn_on
+        data: {}
+        target:
+          entity_id: !input debounce_boolean
+      - service: timer.start
+        data: {}
+        target:
+          entity_id: !input manual_timer
+      - service: light.turn_on
+        target:
+          entity_id: !input light_device
+        data:
+          brightness_pct: "{{ night_brightness}}"
 
   # #
   # # Light off
