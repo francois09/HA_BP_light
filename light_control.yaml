@@ -121,158 +121,6 @@ action:
       target:
         entity_id: !input debounce_boolean
 
-  # #
-  # # Light off on timer
-  # # -> Turn off the light because end of manual timer
-  - conditions:
-    - condition: trigger
-      id:
-        - trigger_by_timer
-    - condition: state
-      entity_id: !input manual_timer
-      state: idle
-    sequence:
-    - if:
-      - condition: state
-        entity_id: !input light_device
-        state: 'on'
-      then:
-      - service: input_boolean.turn_on
-        data: {}
-        target:
-          entity_id: !input debounce_boolean
-      - service: light.turn_off
-        target:
-          entity_id: !input light_device
-
-
-  # #
-  # # Light on (before sunset, after sunrise == Day)
-  # # -> Turn on the light and start manual timer
-  - conditions:
-    - condition: state
-      entity_id: !input light_device
-      state: 'on'
-    - condition: trigger
-      id:
-        - trigger_by_light
-    - condition: sun
-      before: sunset
-      after: sunrise
-      # after_offset: '-1:00:00'
-      # before_offset: '-1:00:00'
-    sequence:
-    - if:
-      - condition: numeric_state
-        entity_id: !input light_device
-        attribute: brightness_pct
-        below: !input day_brightness
-      then:
-      - service: input_boolean.turn_on
-        data: {}
-        target:
-          entity_id: !input debounce_boolean
-      - service: timer.start
-        data: {}
-        target:
-          entity_id: !input manual_timer
-      - service: light.turn_on
-        target:
-          entity_id: !input light_device
-        data:
-          brightness_pct: "{{ day_brightness }}"
-
-  # #
-  # # Light on (after sunset, before sunrise == Night)
-  # # -> Turn on the light at N% and start manual timer
-  - conditions:
-    - condition: state
-      entity_id: !input light_device
-      state: 'on'
-    - condition: trigger
-      id:
-        - trigger_by_light
-    - condition: sun
-      before: sunrise
-      after: sunset
-      # after_offset: '-1:00:00'
-      # before_offset: '-1:00:00'
-    - condition: numeric_state
-      entity_id: !input light_device
-      attribute: brightness_pct
-      above: !input night_brightness
-    sequence:
-    - if:
-      - condition:
-        condition: numeric_state
-        entity_id: !input light_device
-        attribute: brightness_pct
-        above: !input night_brightness
-      then:  
-      - service: input_boolean.turn_on
-        data: {}
-        target:
-          entity_id: !input debounce_boolean
-      - service: timer.start
-        data: {}
-        target:
-          entity_id: !input manual_timer
-      - service: light.turn_on
-        target:
-          entity_id: !input light_device
-        data:
-          brightness_pct: "{{ night_brightness}}"
-
-  # #
-  # # Light off
-  # # -> Turn off the manual timer, light has been manually shutoff
-  - conditions:
-    - condition: state
-      entity_id: !input light_device
-      state: 'off'
-    - condition: trigger
-      id:
-        - trigger_by_light
-    sequence:
-    - service: timer.cancel
-      data: {}
-      target:
-        entity_id: !input manual_timer
-
-  #
-  # No motion
-  # -> Turn off the light
-  # (in case of multiple sensors, we need to check if ALL motion sensors are OFF )
-  - conditions:
-    - condition: state
-      entity_id: !input motion_sensor
-      state: 'off'
-    - condition: trigger
-      id:
-        - trigger_by_nomotion
-    - condition: state
-      entity_id: !input manual_timer
-      state: idle
-    sequence:
-    - service: timer.start
-      data:
-        duration: !input off_delay
-      target:
-        entity_id: !input manual_timer
-
-    # - if:
-    #   - condition: state
-    #     entity_id: !input light_device
-    #     state: 'on'
-    #   then:
-    #   - service: input_boolean.turn_on
-    #     data: {}
-    #     target:
-    #       entity_id: !input debounce_boolean
-    #   - service: light.turn_off
-    #     target:
-    #       entity_id: !input light_device
-
   #
   # Motion during the day, and for no_window rooms
   # -> Turn on the light 100%
@@ -371,3 +219,132 @@ action:
         entity_id: !input light_device
       data:
         brightness_pct: "{{ night_brightness}}"
+  # #
+  # # Light off on timer
+  # # -> Turn off the light because end of manual timer
+  - conditions:
+    - condition: trigger
+      id:
+        - trigger_by_timer
+    - condition: state
+      entity_id: !input manual_timer
+      state: idle
+    sequence:
+    - if:
+      - condition: state
+        entity_id: !input light_device
+        state: 'on'
+      then:
+      - service: input_boolean.turn_on
+        data: {}
+        target:
+          entity_id: !input debounce_boolean
+      - service: light.turn_off
+        target:
+          entity_id: !input light_device
+
+
+  # #
+  # # Light on (before sunset, after sunrise == Day)
+  # # -> Turn on the light and start manual timer
+  - conditions:
+    - condition: state
+      entity_id: !input light_device
+      state: 'on'
+    - condition: trigger
+      id:
+        - trigger_by_light
+    - condition: sun
+      before: sunset
+      after: sunrise
+      # after_offset: '-1:00:00'
+      # before_offset: '-1:00:00'
+    - condition: numeric_state
+      entity_id: !input light_device
+      attribute: brightness_pct
+      below: !input day_brightness
+    sequence:
+    - service: input_boolean.turn_on
+      data: {}
+      target:
+        entity_id: !input debounce_boolean
+    - service: timer.start
+      data: {}
+      target:
+        entity_id: !input manual_timer
+    - service: light.turn_on
+      target:
+        entity_id: !input light_device
+      data:
+        brightness_pct: "{{ day_brightness }}"
+
+  # #
+  # # Light on (after sunset, before sunrise == Night)
+  # # -> Turn on the light at N% and start manual timer
+  - conditions:
+    - condition: state
+      entity_id: !input light_device
+      state: 'on'
+    - condition: trigger
+      id:
+        - trigger_by_light
+    - condition: sun
+      before: sunrise
+      after: sunset
+      # after_offset: '-1:00:00'
+      # before_offset: '-1:00:00'
+    - condition: numeric_state
+      entity_id: !input light_device
+      attribute: brightness_pct
+      above: !input night_brightness
+    sequence:
+    - service: input_boolean.turn_on
+      data: {}
+      target:
+        entity_id: !input debounce_boolean
+    - service: timer.start
+      data: {}
+      target:
+        entity_id: !input manual_timer
+    - service: light.turn_on
+      target:
+        entity_id: !input light_device
+      data:
+        brightness_pct: "{{ night_brightness}}"
+
+  # #
+  # # Light off
+  # # -> Turn off the manual timer, light has been manually shutoff
+  - conditions:
+    - condition: state
+      entity_id: !input light_device
+      state: 'off'
+    - condition: trigger
+      id:
+        - trigger_by_light
+    sequence:
+    - service: timer.cancel
+      data: {}
+      target:
+        entity_id: !input manual_timer
+
+  #
+  # No motion
+  # -> Turn off the light
+  # (in case of multiple sensors, we need to check if ALL motion sensors are OFF )
+  - conditions:
+    - condition: state
+      entity_id: !input motion_sensor
+      state: 'off'
+    - condition: trigger
+      id:
+        - trigger_by_nomotion
+    - condition: state
+      entity_id: !input manual_timer
+      state: idle
+    sequence:
+    - service: timer.start
+      data:
+        duration: !input off_delay
+      target:
+        entity_id: !input manual_timer
