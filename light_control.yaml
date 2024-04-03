@@ -165,7 +165,7 @@ action:
         condition: numeric_state
         entity_id: !input light_device
         attribute: brightness_pct
-        below: 100
+        below: !input day_brightness
     sequence:
     - service: input_boolean.turn_on
       data: {}
@@ -200,7 +200,7 @@ action:
         condition: numeric_state
         entity_id: !input light_device
         attribute: brightness_pct
-        above: 50
+        above: !input night_brightness
     sequence:
     - service: input_boolean.turn_on
       data: {}
