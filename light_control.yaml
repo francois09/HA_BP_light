@@ -237,19 +237,24 @@ action:
       entity_id: !input manual_timer
       state: idle
     sequence:
-    - delay: !input off_delay
-    - if:
-      - condition: state
-        entity_id: !input light_device
-        state: 'on'
-      then:
-      - service: input_boolean.turn_on
-        data: {}
-        target:
-          entity_id: !input debounce_boolean
-      - service: light.turn_off
-        target:
-          entity_id: !input light_device
+    - service: timer.start
+      data:
+        duration: !input off_delay
+      target:
+        entity_id: !input manual_timer
+
+    # - if:
+    #   - condition: state
+    #     entity_id: !input light_device
+    #     state: 'on'
+    #   then:
+    #   - service: input_boolean.turn_on
+    #     data: {}
+    #     target:
+    #       entity_id: !input debounce_boolean
+    #   - service: light.turn_off
+    #     target:
+    #       entity_id: !input light_device
 
   #
   # Motion during the day, and for no_window rooms
