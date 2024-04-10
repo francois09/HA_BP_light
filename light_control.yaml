@@ -106,7 +106,8 @@ trigger:
 action:
 - choose:
 
-  ########## Gobble message bouncing following automation action
+  ##########
+  # Gobble message bouncing following automation action
   #
   - conditions:
     - condition: state
@@ -121,7 +122,7 @@ action:
       target:
         entity_id: !input debounce_boolean
 
-  #
+  ###########
   # Motion during the day, and for no_window rooms
   # -> Turn on the light 100%
   - conditions:
@@ -152,7 +153,7 @@ action:
       data:
         brightness_pct: "{{ day_brightness}}"
 
-  #
+  ############
   # Motion during the night, and not a bedroom
   # -> Turn on the light 100% if before 22h
   - conditions:
@@ -186,7 +187,7 @@ action:
       data:
         brightness_pct: "{{ day_brightness}}"
 
-  #
+  ############
   # Motion during the night, and not a bedroom
   # -> Turn on the light N% if after 22h
   - conditions:
@@ -219,9 +220,10 @@ action:
         entity_id: !input light_device
       data:
         brightness_pct: "{{ night_brightness}}"
-  # #
-  # # Light off on timer
-  # # -> Turn off the light because end of manual timer
+
+  ############
+  # Light off on timer
+  # -> Turn off the light because end of manual timer and no motion
   - conditions:
     - condition: trigger
       id:
@@ -229,6 +231,9 @@ action:
     - condition: state
       entity_id: !input manual_timer
       state: idle
+    - condition: state
+      entity_id: !input motion_sensor
+      state: 'off'
     sequence:
     - if:
       - condition: state
@@ -244,9 +249,9 @@ action:
           entity_id: !input light_device
 
 
-  # #
-  # # Light on (before sunset, after sunrise == Day)
-  # # -> Turn on the light and start manual timer
+  ############
+  # Light on (before sunset, after sunrise == Day)
+  # -> Turn on the light and start manual timer
   - conditions:
     - condition: state
       entity_id: !input light_device
@@ -278,9 +283,9 @@ action:
       data:
         brightness_pct: "{{ day_brightness }}"
 
-  # #
-  # # Light on (after sunset, before sunrise == Night)
-  # # -> Turn on the light at N% and start manual timer
+  ############
+  # Light on (after sunset, before sunrise == Night)
+  # -> Turn on the light at N% and start manual timer
   - conditions:
     - condition: state
       entity_id: !input light_device
@@ -312,9 +317,9 @@ action:
       data:
         brightness_pct: "{{ night_brightness}}"
 
-  # #
-  # # Light off
-  # # -> Turn off the manual timer, light has been manually shutoff
+  ############
+  # Light off
+  # -> Turn off the manual timer, light has been manually shutoff
   - conditions:
     - condition: state
       entity_id: !input light_device
@@ -328,7 +333,7 @@ action:
       target:
         entity_id: !input manual_timer
 
-  #
+  ############
   # No motion
   # -> Turn off the light
   # (in case of multiple sensors, we need to check if ALL motion sensors are OFF )
@@ -342,6 +347,9 @@ action:
     - condition: state
       entity_id: !input manual_timer
       state: idle
+    - condition: state
+      entity_id: !input light_device
+      state: 'on'
     sequence:
     - service: timer.start
       data:
