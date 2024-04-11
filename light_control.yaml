@@ -318,6 +318,22 @@ action:
         brightness_pct: "{{ night_brightness}}"
 
   ############
+  # Light on (not catched by previous expressions)
+  # -> Turn on the light and start manual timer
+  - conditions:
+    - condition: state
+      entity_id: !input light_device
+      state: 'on'
+    - condition: trigger
+      id:
+        - trigger_by_light
+    sequence:
+    - service: timer.start
+      data: {}
+      target:
+        entity_id: !input manual_timer
+
+  ############
   # Light off
   # -> Turn off the manual timer, light has been manually shutoff
   - conditions:
