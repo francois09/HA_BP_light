@@ -31,25 +31,25 @@ blueprint:
       selector:
         boolean:
     day_brightness:
-      name: Daylight brightness percent
+      name: Daylight brightness
       description: Brightness to set when daylight or blind room
-      default: 100
+      default: 255
       selector:
         number:
           min: 0
-          max: 100
-          unit_of_measurement: "%"
+          max: 255
+          # unit_of_measurement: "%"
           mode: slider
           step: 1
     night_brightness:
-      name: Night brightness percent
+      name: Night brightness
       description: Brightness to set when it's night
       default: 2
       selector:
         number:
           min: 0
-          max: 100
-          unit_of_measurement: "%"
+          max: 255
+          # unit_of_measurement: "%"
           mode: slider
           step: 1
     off_delay:
@@ -126,9 +126,6 @@ action:
   # Motion during the day, and for no_window rooms
   # -> Turn on the light 100%
   - conditions:
-    # - condition: state
-    #   entity_id: !input motion_sensor
-    #   state: 'on'
     - condition: trigger
       id:
         - trigger_by_motion
@@ -138,8 +135,6 @@ action:
     - condition: sun
       before: sunset
       after: sunrise
-      # after_offset: '-1:00:00'
-      # before_offset: '-1:00:00'
     - condition: template
       value_template: "{{ not is_window }}"
     sequence:
@@ -151,15 +146,12 @@ action:
       target:
         entity_id: !input light_device
       data:
-        brightness_pct: "{{ day_brightness}}"
+        brightness: "{{ day_brightness}}"
 
   ############
   # Motion during the night, and not a bedroom
   # -> Turn on the light 100% if before 22h
   - conditions:
-    # - condition: state
-    #   entity_id: !input motion_sensor
-    #   state: 'on'
     - condition: trigger
       id:
         - trigger_by_motion
@@ -169,8 +161,6 @@ action:
     - condition: sun
       before: sunrise
       after: sunset
-      # after_offset: '-1:00:00'
-      # before_offset: '-1:00:00'
     - condition: time
       before: '22:00:00'
       after: '08:00:00'
@@ -185,15 +175,12 @@ action:
       target:
         entity_id: !input light_device
       data:
-        brightness_pct: "{{ day_brightness}}"
+        brightness: "{{ day_brightness}}"
 
   ############
   # Motion during the night, and not a bedroom
   # -> Turn on the light N% if after 22h
   - conditions:
-    # - condition: state
-    #   entity_id: !input motion_sensor
-    #   state: 'on'
     - condition: trigger
       id:
         - trigger_by_motion
@@ -219,7 +206,7 @@ action:
       target:
         entity_id: !input light_device
       data:
-        brightness_pct: "{{ night_brightness}}"
+        brightness: "{{ night_brightness}}"
 
   ############
   # Light off on timer
@@ -251,6 +238,7 @@ action:
 
   ############
   # Light on (before sunset, after sunrise == Day)
+  #### And when brightness is below day value
   # -> Turn on the light and start manual timer
   - conditions:
     - condition: state
@@ -266,7 +254,7 @@ action:
       # before_offset: '-1:00:00'
     - condition: numeric_state
       entity_id: !input light_device
-      attribute: brightness_pct
+      attribute: brightness
       below: !input day_brightness
     sequence:
     - service: input_boolean.turn_on
@@ -281,10 +269,11 @@ action:
       target:
         entity_id: !input light_device
       data:
-        brightness_pct: "{{ day_brightness }}"
+        brightness: "{{ day_brightness }}"
 
   ############
   # Light on (after sunset, before sunrise == Night)
+  #### And when brightness is above night value
   # -> Turn on the light at N% and start manual timer
   - conditions:
     - condition: state
@@ -300,7 +289,7 @@ action:
       # before_offset: '-1:00:00'
     - condition: numeric_state
       entity_id: !input light_device
-      attribute: brightness_pct
+      attribute: brightness
       above: !input night_brightness
     sequence:
     - service: input_boolean.turn_on
@@ -315,11 +304,11 @@ action:
       target:
         entity_id: !input light_device
       data:
-        brightness_pct: "{{ night_brightness}}"
+        brightness: "{{ night_brightness}}"
 
   ############
   # Light on (not catched by previous expressions)
-  # -> Turn on the light and start manual timer
+  # -> Start manual timer
   - conditions:
     - condition: state
       entity_id: !input light_device
