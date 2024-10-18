@@ -10,7 +10,7 @@ blueprint:
       selector:
         entity:
           domain: binary_sensor
-          device_class: motion
+          device_class: occupancy
           multiple: true
     light_device:
       name: Light management device
