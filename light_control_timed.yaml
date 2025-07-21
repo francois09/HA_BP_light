@@ -74,7 +74,7 @@ blueprint:
       description: Timer to indicate previous action was automated, wait for light message to be discarded
       selector:
         entity:
-          domain: input_timer
+          domain: timer
 
 mode: queued
 max_exceeded: silent
