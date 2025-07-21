@@ -1,0 +1,372 @@
+blueprint:
+  name: Smart light management (timed debounce)
+  description: Control light based on daylight time, cloud covering (planned), occupancy and manual switch
+  domain: automation
+  source_url: https://github.com/francois09/HA_BP_light/light_control_timed.yaml
+  input:
+    motion_sensor:
+      name: Motion sensor(s) of the room
+      description: The motion sensor(s) of the room.
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: occupancy
+          multiple: true
+    light_device:
+      name: Light management device
+      description: The light of the room. Can be a switch or a dimmer.
+      selector:
+        entity:
+          domain: light
+    is_window:
+      name: Is there a window in the room
+      description: Is there a window, allowing external light to enter ?
+      default: True
+      selector:
+        boolean:
+    is_bedroom:
+      name: Is this a bedroom
+      description: Is the room a sleeping room ?
+      default: False
+      selector:
+        boolean:
+    day_brightness:
+      name: Daylight brightness
+      description: Brightness to set when daylight or blind room
+      default: 255
+      selector:
+        number:
+          min: 0
+          max: 255
+          # unit_of_measurement: "%"
+          mode: slider
+          step: 1
+    night_brightness:
+      name: Night brightness
+      description: Brightness to set when it's night
+      default: 2
+      selector:
+        number:
+          min: 0
+          max: 255
+          # unit_of_measurement: "%"
+          mode: slider
+          step: 1
+    off_delay:
+      name: Delay before really turning off
+      description: Wait some time after no motion before turning light off really !
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 120
+          unit_of_measurement: "seconds"
+          mode: slider
+          step: 10
+    manual_timer:
+      name: Timer before restoring to automatic mode
+      description: After manual action, timer used to say how long light should respect manual decision
+      selector:
+        entity:
+          domain: timer
+    debounce_timer:
+      name: Waiter for the bounce message
+      description: Timer to indicate previous action was automated, wait for light message to be discarded
+      selector:
+        entity:
+          domain: input_timer
+
+mode: queued
+max_exceeded: silent
+
+variables:
+  is_window: !input is_window
+  is_bedroom: !input is_bedroom
+  day_brightness: !input day_brightness
+  night_brightness: !input night_brightness
+
+
+trigger:
+- platform: state
+  entity_id: !input motion_sensor
+  id: trigger_by_motion
+  to: 'on'
+- platform: state
+  entity_id: !input motion_sensor
+  id: trigger_by_nomotion
+  to: 'off'
+- platform: state
+  entity_id: !input light_device
+  id: trigger_by_light
+- platform: state
+  entity_id: !input manual_timer
+  to: idle
+  id: trigger_by_timer
+
+action:
+- choose:
+
+  ##########
+  # Gobble message bouncing following automation action
+  #
+  - conditions:
+    - condition: state
+      entity_id: !input debounce_timer
+      state: 'active'
+    - condition: trigger
+      id:
+        - trigger_by_light
+    sequence:
+    - service: timer.finish
+      data: {}
+      target:
+        entity_id: !input debounce_timer
+
+  ###########
+  # Motion during the day, and for no_window rooms
+  # -> Turn on the light 100%
+  - conditions:
+    - condition: trigger
+      id:
+        - trigger_by_motion
+    - condition: state
+      entity_id: !input light_device
+      state: 'off'
+    - condition: sun
+      before: sunset
+      after: sunrise
+    - condition: template
+      value_template: "{{ not is_window }}"
+    - condition: state
+      entity_id: !input debounce_timer
+      state: 'idle'
+    sequence:
+    - service: timer.start
+      data: {}
+      target:
+        entity_id: !input debounce_timer
+    - service: light.turn_on
+      target:
+        entity_id: !input light_device
+      data:
+        brightness: "{{ day_brightness}}"
+
+  ############
+  # Motion during the night, and not a bedroom
+  # -> Turn on the light 100% if before 22h
+  - conditions:
+    - condition: trigger
+      id:
+        - trigger_by_motion
+    - condition: state
+      entity_id: !input light_device
+      state: 'off'
+    - condition: sun
+      before: sunrise
+      after: sunset
+    - condition: time
+      before: '22:00:00'
+      after: '08:00:00'
+    - condition: template
+      value_template: "{{ not is_bedroom }}"
+    - condition: state
+      entity_id: !input debounce_timer
+      state: 'idle'
+    sequence:
+    - service: timer.start
+      data: {}
+      target:
+        entity_id: !input debounce_timer
+    - service: light.turn_on
+      target:
+        entity_id: !input light_device
+      data:
+        brightness: "{{ day_brightness}}"
+
+  ############
+  # Motion during the night, and not a bedroom
+  # -> Turn on the light N% if after 22h
+  - conditions:
+    - condition: trigger
+      id:
+        - trigger_by_motion
+    - condition: state
+      entity_id: !input light_device
+      state: 'off'
+    - condition: sun
+      before: sunrise
+      after: sunset
+      # after_offset: '-1:00:00'
+      # before_offset: '-1:00:00'
+    - condition: time
+      after: '22:00:00'
+      before: '08:00:00'
+    - condition: template
+      value_template: "{{ not is_bedroom }}"
+    - condition: state
+      entity_id: !input debounce_timer
+      state: 'idle'
+    sequence:
+    - service: timer.start
+      data: {}
+      target:
+        entity_id: !input debounce_timer
+    - service: light.turn_on
+      target:
+        entity_id: !input light_device
+      data:
+        brightness: "{{ night_brightness}}"
+
+  ############
+  # Light off on timer
+  # -> Turn off the light because end of manual timer and no motion
+  - conditions:
+    - condition: trigger
+      id:
+        - trigger_by_timer
+    - condition: state
+      entity_id: !input manual_timer
+      state: idle
+    - condition: state
+      entity_id: !input motion_sensor
+      state: 'off'
+    sequence:
+    - if:
+      - condition: state
+        entity_id: !input light_device
+        state: 'on'
+      then:
+      - service: timer.start
+        data: {}
+        target:
+          entity_id: !input debounce_timer
+      - service: light.turn_off
+        target:
+          entity_id: !input light_device
+
+
+  ############
+  # Light on (before sunset, after sunrise == Day)
+  #### And when brightness is below day value
+  # -> Turn on the light and start manual timer
+  - conditions:
+    - condition: state
+      entity_id: !input light_device
+      state: 'on'
+    - condition: trigger
+      id:
+        - trigger_by_light
+    - condition: sun
+      before: sunset
+      after: sunrise
+      # after_offset: '-1:00:00'
+      # before_offset: '-1:00:00'
+    - condition: numeric_state
+      entity_id: !input light_device
+      attribute: brightness
+      below: !input day_brightness
+    sequence:
+    - service: timer.start
+      data: {}
+      target:
+        entity_id: !input debounce_timer
+    - service: timer.start
+      data: {}
+      target:
+        entity_id: !input manual_timer
+    - service: light.turn_on
+      target:
+        entity_id: !input light_device
+      data:
+        brightness: "{{ day_brightness }}"
+
+  ############
+  # Light on (after sunset, before sunrise == Night)
+  #### And when brightness is above night value
+  # -> Turn on the light at N% and start manual timer
+  - conditions:
+    - condition: state
+      entity_id: !input light_device
+      state: 'on'
+    - condition: trigger
+      id:
+        - trigger_by_light
+    - condition: sun
+      before: sunrise
+      after: sunset
+      # after_offset: '-1:00:00'
+      # before_offset: '-1:00:00'
+    - condition: numeric_state
+      entity_id: !input light_device
+      attribute: brightness
+      above: !input night_brightness
+    sequence:
+    - service: timer.start
+      data: {}
+      target:
+        entity_id: !input debounce_timer
+    - service: timer.start
+      data: {}
+      target:
+        entity_id: !input manual_timer
+    - service: light.turn_on
+      target:
+        entity_id: !input light_device
+      data:
+        brightness: "{{ night_brightness}}"
+
+  ############
+  # Light on (not catched by previous expressions)
+  # -> Start manual timer
+  - conditions:
+    - condition: state
+      entity_id: !input light_device
+      state: 'on'
+    - condition: trigger
+      id:
+        - trigger_by_light
+    sequence:
+    - service: timer.start
+      data: {}
+      target:
+        entity_id: !input manual_timer
+
+  ############
+  # Light off
+  # -> Turn off the manual timer, light has been manually shutoff
+  - conditions:
+    - condition: state
+      entity_id: !input light_device
+      state: 'off'
+    - condition: trigger
+      id:
+        - trigger_by_light
+    sequence:
+    - service: timer.cancel
+      data: {}
+      target:
+        entity_id: !input manual_timer
+
+  ############
+  # No motion
+  # -> Turn off the light
+  # (in case of multiple sensors, we need to check if ALL motion sensors are OFF )
+  - conditions:
+    - condition: state
+      entity_id: !input motion_sensor
+      state: 'off'
+    - condition: trigger
+      id:
+        - trigger_by_nomotion
+    - condition: state
+      entity_id: !input manual_timer
+      state: idle
+    - condition: state
+      entity_id: !input light_device
+      state: 'on'
+    sequence:
+    - service: timer.start
+      data:
+        duration: !input off_delay
+      target:
+        entity_id: !input manual_timer
