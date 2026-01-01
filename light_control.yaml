@@ -75,6 +75,18 @@ blueprint:
       selector:
         entity:
           domain: input_boolean
+    time_start:
+      name: Start time for automation
+      description: Time starting automation
+      default: '0:00:00'
+      selector:
+        time:
+    time_end:
+      name: End time for automation
+      description: Time ending automation
+      default: '0:00:00'
+      selector:
+        time:
 
 mode: queued
 max_exceeded: silent
@@ -84,6 +96,8 @@ variables:
   is_bedroom: !input is_bedroom
   day_brightness: !input day_brightness
   night_brightness: !input night_brightness
+  time_start: !input time_start
+  time_end: !input time_end
 
 
 trigger:
@@ -140,6 +154,13 @@ action:
     - condition: state
       entity_id: !input debounce_boolean
       state: 'off'
+    - or:
+      - condition: time
+        before: !input time_end
+        after: !input time_start
+      - condition: template
+        value_template: "{{ time_start = time_end }}"
+          
     sequence:
     - service: input_boolean.turn_on
       data: {}
@@ -172,6 +193,12 @@ action:
     - condition: state
       entity_id: !input debounce_boolean
       state: 'off'
+    - or:
+      - condition: time
+        before: !input time_end
+        after: !input time_start
+      - condition: template
+        value_template: "{{ time_start = time_end }}"
     sequence:
     - service: input_boolean.turn_on
       data: {}
@@ -206,6 +233,12 @@ action:
     - condition: state
       entity_id: !input debounce_boolean
       state: 'off'
+    - or:
+      - condition: time
+        before: !input time_end
+        after: !input time_start
+      - condition: template
+        value_template: "{{ time_start = time_end }}"
     sequence:
     - service: input_boolean.turn_on
       data: {}
