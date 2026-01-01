@@ -159,7 +159,7 @@ action:
         before: !input time_end
         after: !input time_start
       - condition: template
-        value_template: "{{ time_start = time_end }}"
+        value_template: "{{ time_start == time_end }}"
           
     sequence:
     - service: input_boolean.turn_on
@@ -198,7 +198,7 @@ action:
         before: !input time_end
         after: !input time_start
       - condition: template
-        value_template: "{{ time_start = time_end }}"
+        value_template: "{{ time_start == time_end }}"
     sequence:
     - service: input_boolean.turn_on
       data: {}
@@ -238,7 +238,7 @@ action:
         before: !input time_end
         after: !input time_start
       - condition: template
-        value_template: "{{ time_start = time_end }}"
+        value_template: "{{ time_start == time_end }}"
     sequence:
     - service: input_boolean.turn_on
       data: {}
