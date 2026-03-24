@@ -261,10 +261,10 @@ action:
       entity_id: !input manual_timer
       state: idle
     - not:
-      - or:
-        - condition: state
-          entity_id: !input motion_sensor
-          state: 'on'
+      - condition: state
+        entity_id: !input motion_sensor
+        state: 'on'
+        match: any
     sequence:
     - if:
       - condition: state
@@ -388,10 +388,10 @@ action:
   # (in case of multiple sensors, we need to check if ALL motion sensors are OFF )
   - conditions:
     - not:
-      - or:
-        - condition: state
-          entity_id: !input motion_sensor
-          state: 'on'
+      - condition: state
+        entity_id: !input motion_sensor
+        state: 'on'
+        match: any
     - condition: trigger
       id:
         - trigger_by_nomotion
