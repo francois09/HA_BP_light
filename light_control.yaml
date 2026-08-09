@@ -5,8 +5,16 @@ blueprint:
   source_url: https://github.com/francois09/HA_BP_light/light_control.yaml
   input:
     motion_sensor:
-      name: Motion sensor(s) of the room
-      description: The motion sensor(s) of the room.
+      name: Motion sensor(s) for illumination
+      description: The motion sensor(s) used to turn on
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: occupancy
+          multiple: true
+    maintain_motion_sensor:
+      name: Motion sensor(s) for maintain
+      description: The motion sensor(s) used to maintain light
       selector:
         entity:
           domain: binary_sensor
@@ -107,6 +115,10 @@ trigger:
   to: 'on'
 - platform: state
   entity_id: !input motion_sensor
+  id: trigger_by_nomotion
+  to: 'off'
+- platform: state
+  entity_id: !input maintain_motion_sensor
   id: trigger_by_nomotion
   to: 'off'
 - platform: state
@@ -388,10 +400,15 @@ action:
   # (in case of multiple sensors, we need to check if ALL motion sensors are OFF )
   - conditions:
     - not:
-      - condition: state
-        entity_id: !input motion_sensor
-        state: 'on'
-        match: any
+      - or:
+        - condition: state
+          entity_id: !input motion_sensor
+          state: 'on'
+          match: any
+        - condition: state
+          entity_id: !input maintain_motion_sensor
+          state: 'on'
+          match: any
     - condition: trigger
       id:
         - trigger_by_nomotion
