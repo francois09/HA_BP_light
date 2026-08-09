@@ -17,6 +17,7 @@ blueprint:
       description: The motion sensor(s) used to maintain light
       selector:
         entity:
+          default: []
           domain: binary_sensor
           device_class: occupancy
           multiple: true
