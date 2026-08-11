@@ -274,10 +274,15 @@ action:
       entity_id: !input manual_timer
       state: idle
     - not:
-      - condition: state
-        entity_id: !input motion_sensor
-        state: 'on'
-        match: any
+      - or:
+        - condition: state
+          entity_id: !input motion_sensor
+          state: 'on'
+          match: any
+        - condition: state
+          entity_id: !input maintain_motion_sensor
+          state: 'on'
+          match: any
     sequence:
     - if:
       - condition: state
